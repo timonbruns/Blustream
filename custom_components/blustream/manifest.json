@@ -1,11 +1,11 @@
 {
   "domain": "blustream",
   "name": "Blustream Matrix",
-  "codeowners": ["@timonbruns"],
+  "codeowners": ["@IhrGitHubName"],
   "config_flow": true,
-  "documentation": "https://github.com/timonbruns/blustream",
+  "documentation": "https://github.com/IhrRepo/blustream",
   "integration_type": "hub",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/timonbruns/blustream/issues",
+  "issue_tracker": "https://github.com/IhrRepo/blustream/issues",
   "version": "0.3.0"
 }
