@@ -1,4 +1,4 @@
-"""Media Player für Blustream: Quelle, Lautstärke, Mute, Power."""
+"""Media Player für Blustream Geräte."""
 from __future__ import annotations
 
 from homeassistant.components.media_player import (
@@ -10,7 +10,15 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_INPUT_NAMES, DOMAIN, MFP62_INPUTS
+from .const import (
+    CONF_INPUT_NAMES,
+    CONF_MODEL,
+    DA11_GAIN_MAX,
+    DA11_SOURCES,
+    DOMAIN,
+    MFP62_INPUTS,
+    MODEL_DA11ABL,
+)
 from .entity import BlustreamEntity
 
 
@@ -18,13 +26,15 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([BlustreamMediaPlayer(coordinator, entry)])
+    if entry.data.get(CONF_MODEL) == MODEL_DA11ABL:
+        async_add_entities([Da11MediaPlayer(coordinator, entry)])
+    else:
+        async_add_entities([Mfp62MediaPlayer(coordinator, entry)])
 
 
-class BlustreamMediaPlayer(BlustreamEntity, MediaPlayerEntity):
+class Mfp62MediaPlayer(BlustreamEntity, MediaPlayerEntity):
     """Repräsentiert den (gemeinsamen) Ausgang des MFP62."""
 
-    # Name = Gerätename (kein Zusatz), da dies die Haupt-Entität ist.
     _attr_name = None
 
     def __init__(self, coordinator, entry) -> None:
@@ -71,8 +81,6 @@ class BlustreamMediaPlayer(BlustreamEntity, MediaPlayerEntity):
         code = self._name_to_id.get(source)
         if code is None:
             return
-        # Beide Ausgänge des MFP62 spiegeln dieselbe Quelle; Senden an
-        # Ausgang 01 setzt die gemeinsame Quelle.
         await self.coordinator.async_send(f"OUT 01 FR {code:02d}", source=code)
 
     async def async_turn_on(self) -> None:
@@ -97,3 +105,70 @@ class BlustreamMediaPlayer(BlustreamEntity, MediaPlayerEntity):
     async def async_volume_down(self) -> None:
         new = max(0, self.coordinator.data.get("volume", 0) - 5)
         await self.coordinator.async_send("VOL -", volume=new)
+
+
+class Da11MediaPlayer(BlustreamEntity, MediaPlayerEntity):
+    """Repräsentiert den DA11ABL-V2 Audio-Empfänger.
+
+    Lautstärke wird auf OUT GAIN (0-15) abgebildet. Achtung Gerätelogik:
+    0 = höchster Pegel (+20 dBu), 15 = niedrigster (-28 dBV). Der
+    HA-Lautstärkeregler wird daher invertiert übersetzt.
+    """
+
+    _attr_name = None
+
+    def __init__(self, coordinator, entry) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{self._host}_media_player"
+        self._attr_source_list = list(DA11_SOURCES.values())
+        self._name_to_id = {v: k for k, v in DA11_SOURCES.items()}
+        self._attr_supported_features = (
+            MediaPlayerEntityFeature.SELECT_SOURCE
+            | MediaPlayerEntityFeature.VOLUME_SET
+            | MediaPlayerEntityFeature.VOLUME_MUTE
+            | MediaPlayerEntityFeature.VOLUME_STEP
+        )
+
+    @property
+    def state(self) -> MediaPlayerState:
+        # Kein Standby-Befehl vorhanden; Gerät gilt als an.
+        return MediaPlayerState.ON
+
+    @property
+    def source(self) -> str | None:
+        return DA11_SOURCES.get(self.coordinator.data.get("source"))
+
+    @property
+    def volume_level(self) -> float:
+        gain = self.coordinator.data.get("out_gain", DA11_GAIN_MAX)
+        return 1.0 - (gain / DA11_GAIN_MAX)
+
+    @property
+    def is_volume_muted(self) -> bool:
+        return self.coordinator.data.get("out_mute", False)
+
+    async def async_select_source(self, source: str) -> None:
+        code = self._name_to_id.get(source)
+        if code is None:
+            return
+        await self.coordinator.async_send(f"IN SOURCE {code}", source=code)
+
+    async def async_set_volume_level(self, volume: float) -> None:
+        gain = round((1.0 - volume) * DA11_GAIN_MAX)
+        gain = max(0, min(DA11_GAIN_MAX, gain))
+        await self.coordinator.async_send(f"OUT GAIN {gain}", out_gain=gain)
+
+    async def async_mute_volume(self, mute: bool) -> None:
+        await self.coordinator.async_send(
+            f"OUT MUTE {'ON' if mute else 'OFF'}", out_mute=mute
+        )
+
+    async def async_volume_up(self) -> None:
+        gain = max(0, self.coordinator.data.get("out_gain", DA11_GAIN_MAX) - 1)
+        await self.coordinator.async_send(f"OUT GAIN {gain}", out_gain=gain)
+
+    async def async_volume_down(self) -> None:
+        gain = min(
+            DA11_GAIN_MAX, self.coordinator.data.get("out_gain", 0) + 1
+        )
+        await self.coordinator.async_send(f"OUT GAIN {gain}", out_gain=gain)

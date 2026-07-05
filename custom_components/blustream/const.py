@@ -4,8 +4,6 @@ DOMAIN = "blustream"
 DEFAULT_PORT = 23
 
 # Status-Abfrage-Intervall in Sekunden (5 Minuten).
-# Da keine Fernbedienung / kein Front-Panel-Betrieb durch den Kunden
-# vorgesehen ist, reicht ein seltenes Polling als Sicherheitsnetz aus.
 DEFAULT_SCAN_INTERVAL = 300
 
 # Config-Entry Keys
@@ -20,15 +18,18 @@ PLATFORMS = ["media_player", "switch", "number", "select", "button"]
 # Geräteprofile
 # ---------------------------------------------------------------------------
 MODEL_MFP62 = "mfp62"
+MODEL_DA11ABL = "da11abl_v2"
 
 # Auswahlliste für den Config Flow (Wert -> Anzeigename).
-# Weitere Geräte können hier später ergänzt werden.
 MODELS = {
     MODEL_MFP62: "Blustream MFP62",
+    MODEL_DA11ABL: "Blustream DA11ABL-V2 (Bluetooth-Empfänger)",
 }
 
-# MFP62: feste Eingänge (FR-Befehlscode -> Standard-Klarname).
-# Der Befehlssatz des MFP62 ordnet die Eingänge fest zu:
+# ---------------------------------------------------------------------------
+# MFP62 Profil
+# ---------------------------------------------------------------------------
+# Feste Eingänge (FR-Befehlscode -> Standard-Klarname):
 #   01-03 = HDMI, 04 = DisplayPort, 05 = USB-C, 06 = VGA
 MFP62_INPUTS = [
     (1, "HDMI 1"),
@@ -42,9 +43,6 @@ MFP62_INPUTS = [
 # MFP62: 2 Ausgänge (gespiegeltes Signal, aber einzeln schaltbar).
 MFP62_OUTPUTS = 2
 
-# ---------------------------------------------------------------------------
-# Auswahloptionen
-# ---------------------------------------------------------------------------
 # OUT RES rr  -> Scaler-Ausgangsauflösung (Code -> Label)
 RESOLUTION_OPTIONS = {
     "00": "1024x768@60Hz",
@@ -74,3 +72,45 @@ MIC_MIX_OPTIONS = {
     "BGO": "Nur Hintergrund-Audio",
     "MICO": "Nur Mikrofon",
 }
+
+# ---------------------------------------------------------------------------
+# DA11ABL-V2 Profil (Bluetooth-/Analog-Audio-Empfänger)
+# ---------------------------------------------------------------------------
+# Eingangsquellen: IN SOURCE 1 = Analog, IN SOURCE 2 = Bluetooth
+DA11_SOURCES = {
+    1: "Analog",
+    2: "Bluetooth",
+}
+
+# BT PAIR MODE 0/1/2
+DA11_PAIR_MODE_OPTIONS = {
+    "0": "Pairing aus",
+    "1": "Pairing an",
+    "2": "Pairing manuell",
+}
+
+# PRIORITY 1/2 -> welcher Eingang hat Vorrang
+DA11_PRIORITY_OPTIONS = {
+    "1": "Analog bevorzugt",
+    "2": "Bluetooth bevorzugt",
+}
+
+# BT PRIORITY 0/1 -> welches BT-Gerät hat Vorrang
+DA11_BT_PRIORITY_OPTIONS = {
+    "0": "Zuerst verbundenes Gerät",
+    "1": "Zuletzt verbundenes Gerät",
+}
+
+# Pegelbereiche (Gerätewerte 0-15; 0 = höchster Pegel)
+DA11_GAIN_MIN = 0
+DA11_GAIN_MAX = 15
+DA11_SENS_MIN = 0
+DA11_SENS_MAX = 15
+
+# BT TIMEOUT Bereich in Sekunden
+DA11_TIMEOUT_MIN = 1
+DA11_TIMEOUT_MAX = 999
+
+# AUTO SW Bereich in Sekunden
+DA11_AUTOSW_MIN = 0
+DA11_AUTOSW_MAX = 999

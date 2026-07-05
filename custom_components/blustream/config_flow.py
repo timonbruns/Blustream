@@ -19,13 +19,19 @@ from .const import (
     DOMAIN,
     MFP62_INPUTS,
     MFP62_OUTPUTS,
+    MODEL_DA11ABL,
     MODEL_MFP62,
     MODELS,
 )
 
+DEFAULT_NAMES = {
+    MODEL_MFP62: "Blustream MFP62",
+    MODEL_DA11ABL: "Blustream DA11ABL",
+}
+
 
 class BlustreamConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Geführte Einrichtung: Hardware -> Verbindung -> Benennung."""
+    """Geführte Einrichtung: Produkt -> Verbindung -> ggf. Benennung."""
 
     VERSION = 2
 
@@ -33,7 +39,7 @@ class BlustreamConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.data: dict = {}
 
     async def async_step_user(self, user_input=None):
-        """Schritt 1: Welche Blustream Hardware wird verwendet?"""
+        """Schritt 1: Welches Blustream Produkt wird verwendet?"""
         if user_input is not None:
             self.data[CONF_MODEL] = user_input[CONF_MODEL]
             return await self.async_step_connection()
@@ -62,21 +68,28 @@ class BlustreamConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(user_input["host"])
             self._abort_if_unique_id_configured()
             self.data.update(user_input)
-            return await self.async_step_input_names()
+            # Nur der MFP62 braucht Benennungs-Schritte; der DA11ABL hat
+            # feste Quellen (Analog/Bluetooth) und keinen benannten Ausgang.
+            if self.data[CONF_MODEL] == MODEL_MFP62:
+                return await self.async_step_input_names()
+            return self.async_create_entry(
+                title=self.data["name"], data=self.data
+            )
 
+        default_name = DEFAULT_NAMES.get(self.data.get(CONF_MODEL), "Blustream")
         return self.async_show_form(
             step_id="connection",
             data_schema=vol.Schema(
                 {
                     vol.Required("host"): str,
                     vol.Optional("port", default=DEFAULT_PORT): int,
-                    vol.Required("name", default="Blustream MFP62"): str,
+                    vol.Required("name", default=default_name): str,
                 }
             ),
         )
 
     async def async_step_input_names(self, user_input=None):
-        """Schritt 3: Klarnamen für die (fest vorgegebenen) Eingänge."""
+        """Schritt 3 (MFP62): Klarnamen für die Eingänge."""
         if user_input is not None:
             self.data[CONF_INPUT_NAMES] = user_input
             return await self.async_step_output_names()
@@ -92,7 +105,7 @@ class BlustreamConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_output_names(self, user_input=None):
-        """Schritt 4: Klarnamen für die Ausgänge."""
+        """Schritt 4 (MFP62): Klarnamen für die Ausgänge."""
         if user_input is not None:
             self.data[CONF_OUTPUT_NAMES] = user_input
             return self.async_create_entry(title=self.data["name"], data=self.data)

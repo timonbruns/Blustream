@@ -1,4 +1,4 @@
-"""Select-Entitäten: Mikrofon-Mix-Modus und Ausgangsauflösung."""
+"""Select-Entitäten für Blustream Geräte."""
 from __future__ import annotations
 
 from homeassistant.components.select import SelectEntity
@@ -6,7 +6,16 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, MIC_MIX_OPTIONS, RESOLUTION_OPTIONS
+from .const import (
+    CONF_MODEL,
+    DA11_BT_PRIORITY_OPTIONS,
+    DA11_PAIR_MODE_OPTIONS,
+    DA11_PRIORITY_OPTIONS,
+    DOMAIN,
+    MIC_MIX_OPTIONS,
+    MODEL_DA11ABL,
+    RESOLUTION_OPTIONS,
+)
 from .entity import BlustreamEntity
 
 
@@ -14,58 +23,74 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
-        [
-            BlustreamMicMixSelect(coordinator, entry),
-            BlustreamResolutionSelect(coordinator, entry),
-        ]
-    )
+
+    entities: list[SelectEntity] = []
+    if entry.data.get(CONF_MODEL) == MODEL_DA11ABL:
+        entities.append(
+            BlustreamCommandSelect(
+                coordinator, entry, "bt_pair_mode", "bt_pair_mode",
+                "Bluetooth-Pairing", "BT PAIR MODE {v}",
+                DA11_PAIR_MODE_OPTIONS, "mdi:bluetooth-settings",
+            )
+        )
+        entities.append(
+            BlustreamCommandSelect(
+                coordinator, entry, "in_priority", "in_priority",
+                "Eingangs-Priorität", "PRIORITY {v}",
+                DA11_PRIORITY_OPTIONS, "mdi:priority-high",
+            )
+        )
+        entities.append(
+            BlustreamCommandSelect(
+                coordinator, entry, "bt_priority", "bt_priority",
+                "Bluetooth-Geräte-Priorität", "BT PRIORITY {v}",
+                DA11_BT_PRIORITY_OPTIONS, "mdi:bluetooth-connect",
+            )
+        )
+    else:
+        entities.append(
+            BlustreamCommandSelect(
+                coordinator, entry, "mic_mix", "mic_mix",
+                "Mikrofon-Mix", "MIC MIX {v}",
+                MIC_MIX_OPTIONS, "mdi:tune-vertical",
+            )
+        )
+        entities.append(
+            BlustreamCommandSelect(
+                coordinator, entry, "resolution", "resolution",
+                "Ausgangsauflösung", "OUT RES {v}",
+                RESOLUTION_OPTIONS, "mdi:monitor-screenshot",
+            )
+        )
+
+    async_add_entities(entities)
 
 
-class BlustreamMicMixSelect(BlustreamEntity, SelectEntity):
-    """Mikrofon-/Hintergrund-Mischung (MIC MIX mm)."""
+class BlustreamCommandSelect(BlustreamEntity, SelectEntity):
+    """Generische Auswahl-Entität: Code-Map + Befehlsschablone."""
 
-    _attr_name = "Mikrofon-Mix"
-    _attr_icon = "mdi:tune-vertical"
-
-    def __init__(self, coordinator, entry) -> None:
+    def __init__(
+        self, coordinator, entry, state_key: str, unique_suffix: str,
+        name: str, cmd_template: str, options: dict[str, str], icon: str,
+    ) -> None:
         super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{self._host}_mic_mix"
-        self._code_to_label = dict(MIC_MIX_OPTIONS)
-        self._label_to_code = {v: k for k, v in MIC_MIX_OPTIONS.items()}
-        self._attr_options = list(MIC_MIX_OPTIONS.values())
+        self._state_key = state_key
+        self._cmd_template = cmd_template
+        self._code_to_label = dict(options)
+        self._label_to_code = {v: k for k, v in options.items()}
+        self._attr_options = list(options.values())
+        self._attr_name = name
+        self._attr_icon = icon
+        self._attr_unique_id = f"{self._host}_{unique_suffix}"
 
     @property
     def current_option(self) -> str | None:
-        return self._code_to_label.get(self.coordinator.data.get("mic_mix"))
+        return self._code_to_label.get(self.coordinator.data.get(self._state_key))
 
     async def async_select_option(self, option: str) -> None:
         code = self._label_to_code.get(option)
         if code is None:
             return
-        await self.coordinator.async_send(f"MIC MIX {code}", mic_mix=code)
-
-
-class BlustreamResolutionSelect(BlustreamEntity, SelectEntity):
-    """Scaler-Ausgangsauflösung (OUT RES rr)."""
-
-    _attr_name = "Ausgangsauflösung"
-    _attr_icon = "mdi:monitor-screenshot"
-    _attr_entity_category = None
-
-    def __init__(self, coordinator, entry) -> None:
-        super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{self._host}_resolution"
-        self._code_to_label = dict(RESOLUTION_OPTIONS)
-        self._label_to_code = {v: k for k, v in RESOLUTION_OPTIONS.items()}
-        self._attr_options = list(RESOLUTION_OPTIONS.values())
-
-    @property
-    def current_option(self) -> str | None:
-        return self._code_to_label.get(self.coordinator.data.get("resolution"))
-
-    async def async_select_option(self, option: str) -> None:
-        code = self._label_to_code.get(option)
-        if code is None:
-            return
-        await self.coordinator.async_send(f"OUT RES {code}", resolution=code)
+        await self.coordinator.async_send(
+            self._cmd_template.format(v=code), **{self._state_key: code}
+        )
