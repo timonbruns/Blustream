@@ -12,7 +12,7 @@ CONF_INPUT_NAMES = "input_names"
 CONF_OUTPUT_NAMES = "output_names"
 
 # Plattformen, die diese Integration bereitstellt
-PLATFORMS = ["media_player", "switch", "number", "select", "button"]
+PLATFORMS = ["media_player", "switch", "number", "select", "button", "sensor"]
 
 # ---------------------------------------------------------------------------
 # Geräteprofile

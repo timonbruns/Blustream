@@ -46,6 +46,8 @@ DEFAULT_STATE_DA11 = {
     "in_priority": "1",    # PRIORITY 1/2
     "bt_timeout": 60,      # BT TIMEOUT 1-999 s
     "auto_sw": 10,         # AUTO SW Sekunden
+    "bt_source_1": None,   # Name des verbundenen BT-Geraets 1 (aus STATUS)
+    "bt_source_2": None,   # Name des verbundenen BT-Geraets 2 (aus STATUS)
 }
 
 MODEL_DEFAULTS = {
@@ -190,3 +192,25 @@ class BlustreamCoordinator(DataUpdateCoordinator):
         match = re.search(r"AUTO\s*SW\D*(\d{1,3})\b", up)
         if match:
             state["auto_sw"] = int(match.group(1))
+
+        # Verbundene Bluetooth-Geraete: Zeile nach "Bluetooth_Source_N".
+        # Getrennt: "Disconnected   Disconnected"
+        # Verbunden (erwartet): "<Geraetename>   Connected"
+        # Achtung: Gross-/Kleinschreibung des Namens erhalten -> Original-
+        # Text verwenden, nicht die Grossbuchstaben-Kopie.
+        lines = [ln.strip() for ln in text.splitlines()]
+        for idx, line in enumerate(lines):
+            match = re.match(r"(?i)^Bluetooth_Source_([12])\b", line)
+            if not match or idx + 1 >= len(lines):
+                continue
+            slot = match.group(1)
+            info = lines[idx + 1]
+            if not info or info.upper().startswith("DISCONNECT"):
+                state[f"bt_source_{slot}"] = None
+                continue
+            # Statuswort am Zeilenende (Connected/Disconnected) abtrennen
+            parts = re.split(r"\s{2,}", info)
+            name = parts[0].strip()
+            if name.upper() in ("CONNECTED", "DISCONNECTED", ""):
+                name = None
+            state[f"bt_source_{slot}"] = name

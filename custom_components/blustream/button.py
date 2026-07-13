@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import logging
 
+from homeassistant.helpers.event import async_call_later
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -111,3 +113,11 @@ class BlustreamCommandButton(BlustreamEntity, ButtonEntity):
             self._command,
             (response or "").strip() or "(keine)",
         )
+
+        # Kurz danach den Status neu abfragen, damit z. B. die
+        # Bluetooth-Quellen-Sensoren die Aktion zeitnah widerspiegeln
+        # (Verbinden/Trennen braucht ein paar Sekunden).
+        async def _refresh(_now) -> None:
+            await self.coordinator.async_request_refresh()
+
+        async_call_later(self.hass, 6, _refresh)
