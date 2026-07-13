@@ -10,10 +10,6 @@ from .const import (
     CONF_MODEL,
     DA11_AUTOSW_MAX,
     DA11_AUTOSW_MIN,
-    DA11_GAIN_MAX,
-    DA11_GAIN_MIN,
-    DA11_SENS_MAX,
-    DA11_SENS_MIN,
     DA11_TIMEOUT_MAX,
     DA11_TIMEOUT_MIN,
     DOMAIN,
@@ -29,20 +25,6 @@ async def async_setup_entry(
 
     entities: list[NumberEntity] = []
     if entry.data.get(CONF_MODEL) == MODEL_DA11ABL:
-        entities.append(
-            BlustreamCommandNumber(
-                coordinator, entry, "out_gain", "out_gain",
-                "Ausgangspegel (0 = max)", "OUT GAIN {v}",
-                DA11_GAIN_MIN, DA11_GAIN_MAX, "mdi:volume-high",
-            )
-        )
-        entities.append(
-            BlustreamCommandNumber(
-                coordinator, entry, "ana_sens", "ana_sens",
-                "Analog-Empfindlichkeit (0 = max)", "ANA IN SENS {v}",
-                DA11_SENS_MIN, DA11_SENS_MAX, "mdi:knob",
-            )
-        )
         entities.append(
             BlustreamCommandNumber(
                 coordinator, entry, "bt_timeout", "bt_timeout",

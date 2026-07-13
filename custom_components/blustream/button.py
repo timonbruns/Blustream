@@ -1,6 +1,8 @@
 """Button-Entitäten für Blustream Geräte."""
 from __future__ import annotations
 
+import logging
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -15,6 +17,8 @@ from .const import (
 )
 from .entity import BlustreamEntity
 
+_LOGGER = logging.getLogger(__name__)
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
@@ -23,19 +27,27 @@ async def async_setup_entry(
 
     entities: list[ButtonEntity] = []
     if entry.data.get(CONF_MODEL) == MODEL_DA11ABL:
+        # Pairing-Fenster öffnen (entspricht der Pair-Taste der Web-UI)
+        entities.append(
+            BlustreamCommandButton(
+                coordinator, entry, "bt_pair_start",
+                "Bluetooth-Pairing starten",
+                "BT RXPAIR", "mdi:bluetooth-audio",
+            )
+        )
         # Verbinden/Trennen der zwei möglichen Bluetooth-Geräte
         for dev in (1, 2):
             entities.append(
                 BlustreamCommandButton(
                     coordinator, entry, f"bt_connect_{dev}",
-                    f"Bluetooth-Gerät {dev} verbinden",
+                    f"Gekoppeltes Gerät {dev} verbinden",
                     f"BT RXCD {dev:02d}", "mdi:bluetooth-connect",
                 )
             )
             entities.append(
                 BlustreamCommandButton(
                     coordinator, entry, f"bt_disconnect_{dev}",
-                    f"Bluetooth-Gerät {dev} trennen",
+                    f"Gekoppeltes Gerät {dev} trennen",
                     f"BT RXDIS {dev:02d}", "mdi:bluetooth-off",
                 )
             )
@@ -74,7 +86,12 @@ class Mfp62SourceButton(BlustreamEntity, ButtonEntity):
 
 
 class BlustreamCommandButton(BlustreamEntity, ButtonEntity):
-    """Generischer Befehls-Button ohne Zustandsänderung."""
+    """Generischer Befehls-Button ohne Zustandsänderung.
+
+    Sendet per Abfrage und protokolliert die Antwort des Geräts, damit
+    sich Befehlsformat-Probleme (z. B. "01" vs. "1") im Log erkennen
+    lassen.
+    """
 
     def __init__(
         self, coordinator, entry, unique_suffix: str, name: str,
@@ -87,4 +104,10 @@ class BlustreamCommandButton(BlustreamEntity, ButtonEntity):
         self._attr_unique_id = f"{self._host}_{unique_suffix}"
 
     async def async_press(self) -> None:
-        await self.coordinator.async_send(self._command)
+        response = await self.coordinator.client.async_query(self._command)
+        _LOGGER.info(
+            "Button '%s' sendete '%s' - Antwort: %s",
+            self._attr_name,
+            self._command,
+            (response or "").strip() or "(keine)",
+        )

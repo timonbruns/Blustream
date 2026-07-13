@@ -9,8 +9,10 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     CONF_MODEL,
     DA11_BT_PRIORITY_OPTIONS,
+    DA11_GAIN_OPTIONS,
     DA11_PAIR_MODE_OPTIONS,
     DA11_PRIORITY_OPTIONS,
+    DA11_SENS_OPTIONS,
     DOMAIN,
     MIC_MIX_OPTIONS,
     MODEL_DA11ABL,
@@ -45,6 +47,20 @@ async def async_setup_entry(
                 coordinator, entry, "bt_priority", "bt_priority",
                 "Bluetooth-Geräte-Priorität", "BT PRIORITY {v}",
                 DA11_BT_PRIORITY_OPTIONS, "mdi:bluetooth-connect",
+            )
+        )
+        entities.append(
+            BlustreamCommandSelect(
+                coordinator, entry, "out_gain", "out_gain",
+                "Ausgangspegel", "OUT GAIN {v}",
+                DA11_GAIN_OPTIONS, "mdi:volume-high",
+            )
+        )
+        entities.append(
+            BlustreamCommandSelect(
+                coordinator, entry, "ana_sens", "ana_sens",
+                "Analog-Empfindlichkeit", "ANA IN SENS {v}",
+                DA11_SENS_OPTIONS, "mdi:knob",
             )
         )
     else:

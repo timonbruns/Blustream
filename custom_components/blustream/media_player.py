@@ -140,7 +140,7 @@ class Da11MediaPlayer(BlustreamEntity, MediaPlayerEntity):
 
     @property
     def volume_level(self) -> float:
-        gain = self.coordinator.data.get("out_gain", DA11_GAIN_MAX)
+        gain = int(self.coordinator.data.get("out_gain", DA11_GAIN_MAX))
         return 1.0 - (gain / DA11_GAIN_MAX)
 
     @property
@@ -164,11 +164,13 @@ class Da11MediaPlayer(BlustreamEntity, MediaPlayerEntity):
         )
 
     async def async_volume_up(self) -> None:
-        gain = max(0, self.coordinator.data.get("out_gain", DA11_GAIN_MAX) - 1)
+        gain = max(
+            0, int(self.coordinator.data.get("out_gain", DA11_GAIN_MAX)) - 1
+        )
         await self.coordinator.async_send(f"OUT GAIN {gain}", out_gain=gain)
 
     async def async_volume_down(self) -> None:
         gain = min(
-            DA11_GAIN_MAX, self.coordinator.data.get("out_gain", 0) + 1
+            DA11_GAIN_MAX, int(self.coordinator.data.get("out_gain", 0)) + 1
         )
         await self.coordinator.async_send(f"OUT GAIN {gain}", out_gain=gain)

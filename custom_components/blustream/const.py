@@ -114,3 +114,44 @@ DA11_TIMEOUT_MAX = 999
 # AUTO SW Bereich in Sekunden
 DA11_AUTOSW_MIN = 0
 DA11_AUTOSW_MAX = 999
+
+# Pegel-Tabellen aus der Geräte-Hilfe (Firmware V1.4.0)
+# OUT GAIN xx: 0 = +20dBu ... 15 = -28dBV
+DA11_GAIN_OPTIONS = {
+    "0": "+20 dBu",
+    "1": "+18 dBu",
+    "2": "+15 dBu",
+    "3": "+12 dBu",
+    "4": "+9 dBu",
+    "5": "+6 dBu",
+    "6": "+4 dBu",
+    "7": "0 dBu",
+    "8": "0 dBV",
+    "9": "-3 dBV",
+    "10": "-6 dBV",
+    "11": "-10 dBV",
+    "12": "-14 dBV",
+    "13": "-20 dBV",
+    "14": "-24 dBV",
+    "15": "-28 dBV",
+}
+
+# ANA IN SENS xx: 0 = +24dBu ... 15 = -28dBV
+DA11_SENS_OPTIONS = {
+    "0": "+24 dBu",
+    "1": "+21 dBu",
+    "2": "+18 dBu",
+    "3": "+15 dBu",
+    "4": "+12 dBu",
+    "5": "+9 dBu",
+    "6": "+6 dBu",
+    "7": "+4 dBu",
+    "8": "0 dBu",
+    "9": "0 dBV",
+    "10": "-3 dBV",
+    "11": "-6 dBV",
+    "12": "-10 dBV",
+    "13": "-14 dBV",
+    "14": "-20 dBV",
+    "15": "-28 dBV",
+}

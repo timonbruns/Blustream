@@ -37,8 +37,8 @@ DEFAULT_STATE_MFP62 = {
 DEFAULT_STATE_DA11 = {
     "source": 2,           # IN SOURCE: 1 Analog, 2 Bluetooth
     "out_mute": False,     # OUT MUTE
-    "out_gain": 8,         # OUT GAIN 0-15 (0 = höchster Pegel)
-    "ana_sens": 8,         # ANA IN SENS 0-15
+    "out_gain": "8",       # OUT GAIN 0-15 (0 = höchster Pegel)
+    "ana_sens": "8",       # ANA IN SENS 0-15
     "ana_in_mute": False,  # ANA IN MUTE
     "bt_in_mute": False,   # BT IN MUTE
     "bt_pair_mode": "1",   # BT PAIR MODE 0/1/2
@@ -159,7 +159,7 @@ class BlustreamCoordinator(DataUpdateCoordinator):
             state["out_mute"] = match.group(1) == "ON"
         match = re.search(r"OUT\s*GAIN\D*(\d{1,2})\b", up)
         if match:
-            state["out_gain"] = min(15, int(match.group(1)))
+            state["out_gain"] = str(min(15, int(match.group(1))))
 
         # Analog-Eingang
         match = re.search(r"ANA\s*IN\s*MUTE\D*(ON|OFF)\b", up)
@@ -167,7 +167,7 @@ class BlustreamCoordinator(DataUpdateCoordinator):
             state["ana_in_mute"] = match.group(1) == "ON"
         match = re.search(r"ANA\s*IN\s*SENS\D*(\d{1,2})\b", up)
         if match:
-            state["ana_sens"] = min(15, int(match.group(1)))
+            state["ana_sens"] = str(min(15, int(match.group(1))))
 
         # Bluetooth
         match = re.search(r"BT\s*IN\s*MUTE\D*(ON|OFF)\b", up)
