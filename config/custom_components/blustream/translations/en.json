@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Select Blustream product",
+        "description": "Choose your Blustream product.",
+        "data": {
+          "model": "Product"
+        }
+      },
+      "connection": {
+        "title": "Connect to the device",
+        "description": "Enter the connection details of your Blustream device.",
+        "data": {
+          "host": "IP address",
+          "port": "Port",
+          "name": "Name"
+        },
+        "data_description": {
+          "host": "IP address of your matrix",
+          "port": "Port (default 23)",
+          "name": "Display name of the device in Home Assistant"
+        }
+      },
+      "input_names": {
+        "title": "Name the inputs",
+        "description": "Enter friendly names for the {count} inputs. These appear as source options."
+      },
+      "output_names": {
+        "title": "Name the outputs",
+        "description": "Enter friendly names for the {count} outputs."
+      }
+    },
+    "abort": {
+      "already_configured": "This device is already configured."
+    },
+    "error": {
+      "cannot_connect": "Connection failed.",
+      "unknown": "An unexpected error occurred."
+    }
+  }
+}
